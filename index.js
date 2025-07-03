@@ -1,11 +1,24 @@
 import { OpenAI } from "openai";
 import "dotenv/config";
 import axios from "axios";
+import readline from "readline";
 
 const openai = new OpenAI();
 
+console.log(` **   **     **     *******       **     ****     ** **  ********         ******  **       **
+/**  **     ****   /**////**     ****   /**/**   /**//* **//////         **////**/**      /**
+/** **     **//**  /**   /**    **//**  /**//**  /** / /**              **    // /**      /**
+/****     **  //** /*******    **  //** /** //** /**   /*********      /**       /**      /**
+/**/**   **********/**///**   **********/**  //**/**   ////////**      /**       /**      /**
+/**//** /**//////**/**  //** /**//////**/**   //****          /**      //**    **/**      /**
+/** //**/**     /**/**   //**/**     /**/**    //***    ********        //****** /********/**
+//   // //      // //     // //      // //      ///    ////////          //////  //////// // `);
+
+import { stdin as input, stdout as output } from "node:process";
+const rl = readline.createInterface({ input, output });
+
 async function getWeather(city) {
-  const url = `https://wttr.in/${city.toLowerCase()}`;
+  const url = `https://wttr.in/${city.toLowerCase()}?format=%C+%t`;
   const result = await axios.get(url, { responseType: "text" });
   return `The weather of ${city} is ${result.data}`;
 }
@@ -56,52 +69,61 @@ Output JSON Format:
 const messagesDB = []; // messages store kerne ke lie
 messagesDB.push({ role: "system", content: SYSTEM_PROMPT });
 
-const query = "What is the weather of Jaipur"; //user input
-messagesDB.push({ role: "user", content: query });
-
 startAgent();
+
+function question(query = "") {
+  return new Promise((resolve) => rl.question(query, (ans) => resolve(ans)));
+}
 
 async function startAgent() {
   while (true) {
-    const result = await openai.chat.completions.create({
-      model: "gpt-4.1",
-      response_format: { type: "json_object" },
-      messages: messagesDB,
-    });
+    const query = await question(
+      "🤖 : Welcome to the Weather AI Agent \n🤖 : Which city's weather would you like to know about ?\n👨 : "
+    );
+    messagesDB.push({ role: "user", content: query });
 
-    const response = result.choices[0].message.content;
-    const parsedResponse = JSON.parse(response);
-    messagesDB.push({ role: "assistant", content: response });
+    inner: while (true) {
+      const result = await openai.chat.completions.create({
+        model: "gpt-4.1",
+        response_format: { type: "json_object" },
+        messages: messagesDB,
+      });
 
-    // console.log(messagesDB);
+      const response = result.choices[0].message.content;
+      const parsedResponse = JSON.parse(response);
+      messagesDB.push({ role: "assistant", content: response });
 
-    const { step } = parsedResponse;
+      // console.log(messagesDB);
 
-    switch (step) {
-      case "plan":
-        continue;
+      const { step } = parsedResponse;
 
-      case "action": {
-        const { tool, input } = parsedResponse;
-        const mapping = availableFunctions[tool];
-        if (!mapping) {
+      switch (step) {
+        case "plan":
+          // console.log(`🤖 : ${parsedResponse.content}`);
+          continue;
+
+        case "action": {
+          const { tool, input } = parsedResponse;
+          const mapping = availableFunctions[tool];
+          if (!mapping) {
+            messagesDB.push({
+              role: "developer",
+              message: `Unsupported Tool ${tool}`,
+            });
+            continue;
+          }
+          const output = await mapping.fn(input); //calling the function
           messagesDB.push({
             role: "developer",
-            message: `Unsupported Tool ${tool}`,
+            content: JSON.stringify({ step: "observe", output: output }),
           });
           continue;
         }
-        const output = await mapping.fn(input); //calling the function
-        messagesDB.push({
-          role: "developer",
-          content: JSON.stringify({ step: "observe", output: output }),
-        });
-        continue;
-      }
 
-      case "output":
-        console.log(`🤖 : ${parsedResponse.content}`);
-        return;
+        case "output":
+          console.log(`🤖 : ${parsedResponse.content}\n`);
+          break inner;
+      }
     }
   }
 }
