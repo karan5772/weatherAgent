@@ -22,17 +22,14 @@ It uses a multi-step reasoning approach to answer your weather queries for any c
 
 ### [OpenAI Node.js SDK](https://www.npmjs.com/package/openai)
 
-- ![OpenAI Logo](https://seeklogo.com/images/O/openai-logo-8B9BFEDC26-seeklogo.com.png)
 - Used for interacting with OpenAI's GPT models.
 
 ### [Axios](https://www.npmjs.com/package/axios)
 
-- ![Axios Logo](https://axios-http.com/assets/logo.svg)
 - Promise-based HTTP client for making API requests.
 
 ### [dotenv](https://www.npmjs.com/package/dotenv)
 
-- ![dotenv Logo](https://raw.githubusercontent.com/motdotla/dotenv/master/dotenv.png)
 - Loads environment variables from a `.env` file.
 
 ### [readline (Node.js core)](https://nodejs.org/api/readline.html)
