@@ -1,11 +1,13 @@
 import { OpenAI } from "openai";
 import "dotenv/config";
+import axios from "axios";
 
 const openai = new OpenAI();
 
 async function getWeather(city) {
-  console.log("i ran");
-  return `The weather of the ${city} is 40 C`;
+  const url = `https://wttr.in/${city.toLowerCase()}`;
+  const result = await axios.get(url, { responseType: "text" });
+  return `The weather of ${city} is ${result.data}`;
 }
 
 const availableFunctions = {
@@ -54,7 +56,7 @@ Output JSON Format:
 const messagesDB = []; // messages store kerne ke lie
 messagesDB.push({ role: "system", content: SYSTEM_PROMPT });
 
-const query = "What is the weather of Pilani"; //user input
+const query = "What is the weather of Jaipur"; //user input
 messagesDB.push({ role: "user", content: query });
 
 startAgent();
@@ -71,7 +73,7 @@ async function startAgent() {
     const parsedResponse = JSON.parse(response);
     messagesDB.push({ role: "assistant", content: response });
 
-    console.log(messagesDB);
+    // console.log(messagesDB);
 
     const { step } = parsedResponse;
 
